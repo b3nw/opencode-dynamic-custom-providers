@@ -1,7 +1,7 @@
 import type { TuiPlugin, TuiPluginApi } from "@opencode-ai/plugin/tui"
-import { discoverAndEnrich, clearModelsDevCache, type DisplayStyle } from "./discovery.js"
-import { isValidUrl, sanitizeErrorMessage } from "./security.js"
-import { getApiKey, type ProviderConfig } from "./server.js"
+import type { DisplayStyle } from "./discovery.js"
+import type { ProviderConfig } from "./server.js"
+import { reloadAllProviders, addProvider, validateAddProviderParams } from "./commands.js"
 
 export const id = "opencode-dynamic-custom-providers"
 
@@ -69,62 +69,37 @@ export const tui: TuiPlugin = async (api: TuiPluginApi) => {
         const { data: config } = await api.client.config.get()
         const providers = (config?.provider as Record<string, ProviderConfig>) ?? {}
 
-        const dynamicProviders = Object.entries(providers).filter(
-          ([, p]) => !!p.options?.baseURL && isValidUrl(p.options.baseURL),
-        )
+        const result = await reloadAllProviders(providers)
 
-        if (dynamicProviders.length === 0) {
+        if (result.providerCount === 0) {
           api.ui.toast({ message: "No dynamic providers configured.", variant: "warning" })
           return
         }
 
-        api.ui.toast({ message: `Reloading models from ${dynamicProviders.length} provider(s)...`, variant: "info" })
+        api.ui.toast({
+          message: `Reloading models from ${result.providerCount} provider(s)...`,
+          variant: "info",
+        })
 
-        clearModelsDevCache()
-
-        let totalModels = 0
-        let failures = 0
-
-        for (const [providerId, providerConfig] of dynamicProviders) {
-          const baseURL = providerConfig.options!.baseURL!
-          const apiKey = getApiKey(providerConfig, providerId)
-          const displayStyle: DisplayStyle = providerConfig.displayStyle ?? "slug"
-
-          try {
-            const models = await discoverAndEnrich(baseURL, apiKey, displayStyle)
-            const count = Object.keys(models).length
-
-            if (count > 0) {
-              providerConfig.models = { ...(providerConfig.models ?? {}), ...models }
-              totalModels += count
-            } else if (providerConfig.models && Object.keys(providerConfig.models).length > 0) {
-              api.ui.toast({
-                message: `${providerId} returned 0 models (keeping previous models). Check endpoint status.`,
-                variant: "warning",
-              })
-            }
-          } catch (error) {
-            failures++
-            api.ui.toast({
-              message: `Failed to reload ${providerId}: ${sanitizeErrorMessage(error)}`,
-              variant: "error",
-            })
-          }
+        for (const w of result.warnings) {
+          api.ui.toast({ message: w, variant: "warning" })
+        }
+        for (const e of result.errors) {
+          api.ui.toast({ message: e, variant: "error" })
         }
 
-        if (totalModels > 0) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- bridge local ProviderConfig to SDK schema
-          await api.client.config.update({ config: { provider: providers as Record<string, any> } })
+        if (result.totalModels > 0) {
+          await api.client.config.update({ config: { provider: providers } as never })
         }
 
-        if (failures === 0) {
+        if (result.failures === 0) {
           api.ui.toast({
-            message: `Reloaded ${totalModels} model(s) from ${dynamicProviders.length} provider(s).`,
+            message: `Reloaded ${result.totalModels} model(s) from ${result.providerCount} provider(s).`,
             variant: "success",
           })
-        } else if (totalModels > 0) {
+        } else if (result.totalModels > 0) {
           api.ui.toast({
-            message: `Reloaded ${totalModels} model(s) with ${failures} failure(s). Check provider URLs/keys.`,
+            message: `Reloaded ${result.totalModels} model(s) with ${result.failures} failure(s). Check provider URLs/keys.`,
             variant: "warning",
           })
         }
@@ -142,16 +117,13 @@ export const tui: TuiPlugin = async (api: TuiPluginApi) => {
         if (!rawProviderId) return
 
         const providerId = rawProviderId.trim()
-        if (!/^[a-zA-Z0-9_-]+$/.test(providerId)) {
-          api.ui.toast({ message: "Invalid Provider ID. Use alphanumeric, hyphens, or underscores only.", variant: "error" })
-          return
-        }
 
         const { data: config } = await api.client.config.get()
         const providers = (config?.provider as Record<string, ProviderConfig>) ?? {}
 
+        let overwrite = false
         if (providers[providerId]) {
-          const overwrite = await showConfirm(
+          overwrite = await showConfirm(
             api,
             "Provider already exists",
             `A provider with ID '${providerId}' already exists. Overwrite it?`,
@@ -163,10 +135,6 @@ export const tui: TuiPlugin = async (api: TuiPluginApi) => {
         if (!rawBaseURL) return
 
         const baseURL = rawBaseURL.trim().replace(/\/+$/, "")
-        if (!isValidUrl(baseURL)) {
-          api.ui.toast({ message: "Invalid Base URL. Please enter a full URL (including https://).", variant: "error" })
-          return
-        }
 
         const rawApiKey = await showPrompt(api, "API Key (Optional)", "sk-...")
         const apiKey = rawApiKey?.trim() || undefined
@@ -185,56 +153,42 @@ export const tui: TuiPlugin = async (api: TuiPluginApi) => {
         ])
         if (!displayStyle) return
 
+        const params = { providerId, baseURL, apiKey, displayStyle, overwrite }
+        const validationError = validateAddProviderParams(params, providers)
+        if (validationError) {
+          api.ui.toast({ message: validationError, variant: "error" })
+          return
+        }
+
         api.ui.toast({ message: `Discovering models from ${baseURL}...`, variant: "info" })
 
-        try {
-          const models = await discoverAndEnrich(baseURL, apiKey, displayStyle)
-          const modelCount = Object.keys(models).length
+        const result = await addProvider(params)
 
-          if (modelCount === 0) {
-            api.ui.toast({ message: "No models found at the given endpoint. Provider not added.", variant: "warning" })
-            return
-          }
-
-          const providerEntry: ProviderConfig = {
-            name: providerId,
-            npm: "@ai-sdk/openai-compatible",
-            api: baseURL,
-            options: { baseURL },
-            dynamic: true,
-            displayStyle,
-          }
-
-          if (apiKey) {
-            let storedInAuthStore = false
-            try {
-              await api.client.auth.set({
-                providerID: providerId,
-                auth: { type: "api", key: apiKey },
-              })
-              storedInAuthStore = true
-            } catch {
-              // Auth store unavailable — fall back to config file
-            }
-            if (!storedInAuthStore) {
-              providerEntry.options!.apiKey = apiKey
-            }
-          }
-
-          providers[providerId] = providerEntry
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- bridge local ProviderConfig to SDK schema
-          await api.client.config.update({ config: { provider: providers as Record<string, any> } })
-
-          api.ui.toast({
-            message: `Provider '${providerId}' added (${modelCount} models discovered). Restart opencode to use it.`,
-            variant: "success",
-          })
-        } catch (error) {
-          api.ui.toast({
-            message: `Failed to discover models: ${sanitizeErrorMessage(error)}`,
-            variant: "error",
-          })
+        if (!result.success || !result.providerEntry) {
+          api.ui.toast({ message: result.message, variant: "warning" })
+          return
         }
+
+        if (apiKey) {
+          let storedInAuthStore = false
+          try {
+            await api.client.auth.set({
+              providerID: providerId,
+              auth: { type: "api", key: apiKey },
+            })
+            storedInAuthStore = true
+          } catch {
+            // Auth store unavailable — fall back to config file
+          }
+          if (!storedInAuthStore) {
+            result.providerEntry.options!.apiKey = apiKey
+          }
+        }
+
+        providers[providerId] = result.providerEntry
+        await api.client.config.update({ config: { provider: providers } as never })
+
+        api.ui.toast({ message: result.message, variant: "success" })
       },
     },
   ])

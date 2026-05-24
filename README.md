@@ -10,18 +10,21 @@ The server plugin's `config` hook discovers models from any provider with a `bas
 ### 2. models.dev Metadata Enrichment
 Discovered models are cross-referenced against the [models.dev](https://models.dev) catalog (the same source OpenCode uses natively) to enrich them with accurate context windows, output limits, costs, capabilities (tool calling, reasoning, temperature), and input/output modalities.
 
-### 3. `/add-provider` Slash Command
-A TUI slash command for interactively adding new providers:
+### 3. `/add-provider` Slash Command (TUI)
+An interactive TUI wizard for adding new providers:
 - Prompts for Provider ID, Base URL, and API Key
 - Validates inputs and checks for duplicates
 - Discovers models to confirm the endpoint works before saving
 - Writes `dynamic: true` so models are re-discovered on each startup
 
-### 4. `/reload-models` Slash Command
+### 4. `/reload-models` Slash Command (TUI)
 A TUI slash command (also available as `/refresh-models`) that re-discovers models from all providers with a `baseURL` without restarting OpenCode. Clears the models.dev cache and updates the live config in one step.
 
-### 5. `refresh-models` Agent Tool
-An in-session tool the agent can call to clear the models.dev metadata cache. Restart OpenCode after to re-discover all models with fresh metadata.
+### 5. `add-provider` Agent Tool (Web / Desktop / TUI)
+A server-side tool the AI agent can call to add a new provider programmatically. Works in all interfaces (web, desktop, and TUI). Accepts provider ID, base URL, API key, and display style as arguments, validates the endpoint, discovers models, and persists the provider config.
+
+### 6. `refresh-models` Agent Tool (Web / Desktop / TUI)
+A server-side tool the AI agent can call to re-discover models from all dynamic providers and update the live config. Clears the models.dev metadata cache, fetches `/models` from every provider with a baseURL, enriches them, and persists the updated config. Works in all interfaces without restarting.
 
 ## Installation
 
@@ -43,7 +46,10 @@ opencode plugin ./opencode-dynamic-custom-providers
 ## Configuration
 
 ### Adding a Provider via TUI
-Run `/add-provider` in the OpenCode TUI and follow the prompts. The provider will be added with `dynamic: true` so models are discovered automatically on each startup.
+Run `/add-provider` in the OpenCode TUI and follow the interactive prompts. The provider will be added with `dynamic: true` so models are discovered automatically on each startup.
+
+### Adding a Provider via the Agent (Web / Desktop)
+Ask the AI agent to add a provider. The agent will use the `add-provider` tool with the parameters you provide. For example: *"Add an OpenAI-compatible provider called my-proxy at https://api.proxy.com/v1 with API key sk-..."*
 
 ### Adding a Provider Manually
 Add a provider to `opencode.json` with a `baseURL`. Models will be discovered automatically:

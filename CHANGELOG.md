@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2026-05-23
+
+### Added
+- `add-provider` server tool for web/desktop provider setup (no TUI required)
+- `refresh-models` server tool now performs full live re-discovery and config update (previously only cleared cache)
+
+### Changed
+- Extracted shared command logic into `src/commands.ts` to deduplicate between TUI commands and server tools
+- Refactored TUI `/add-provider` and `/reload-models` to use shared logic
+
 ## [2.0.0] - 2026-05-21
 
 ### Added
