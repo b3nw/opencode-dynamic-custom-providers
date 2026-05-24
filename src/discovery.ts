@@ -223,7 +223,7 @@ export async function fetchEndpointModels(
     throw new Error("Unexpected response format from /v1/models")
   }
 
-  return data.filter((item: any) => typeof item?.id === "string")
+  return data.filter((item: Record<string, unknown>) => typeof item?.id === "string")
 }
 
 // ── enrichment: merge endpoint data with models.dev ──

@@ -113,6 +113,7 @@ export const tui: TuiPlugin = async (api: TuiPluginApi) => {
         }
 
         if (totalModels > 0) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- bridge local ProviderConfig to SDK schema
           await api.client.config.update({ config: { provider: providers as Record<string, any> } })
         }
 
@@ -221,6 +222,7 @@ export const tui: TuiPlugin = async (api: TuiPluginApi) => {
           }
 
           providers[providerId] = providerEntry
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- bridge local ProviderConfig to SDK schema
           await api.client.config.update({ config: { provider: providers as Record<string, any> } })
 
           api.ui.toast({

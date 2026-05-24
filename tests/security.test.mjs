@@ -1,6 +1,6 @@
 import { test } from "node:test"
 import assert from "node:assert"
-import { isValidUrl, sanitizeModelId, sanitizeErrorMessage } from "../dist/security.js"
+import { isValidUrl, sanitizeModelId, sanitizeErrorMessage, sanitizeUrl } from "../dist/security.js"
 
 test("isValidUrl checks protocols correctly", () => {
   assert.strictEqual(isValidUrl("https://api.openai.com"), true)
@@ -31,4 +31,26 @@ test("sanitizeErrorMessage redacts sensitive information and strips URL query pa
   const errorWithProjKey = "key was sk-proj-abc_def-123 in request"
   assert.ok(!sanitizeErrorMessage(errorWithProjKey).includes("abc_def"))
   assert.ok(sanitizeErrorMessage(errorWithProjKey).includes("sk-[REDACTED]"))
+
+  const errorWithCreds = "Failed to fetch https://user:s3cret@api.proxy.com/v1/models"
+  const sanitized = sanitizeErrorMessage(errorWithCreds)
+  assert.ok(!sanitized.includes("user"))
+  assert.ok(!sanitized.includes("s3cret"))
+  assert.ok(sanitized.includes("api.proxy.com"))
+})
+
+test("sanitizeUrl strips credentials and query parameters", () => {
+  assert.strictEqual(
+    sanitizeUrl("https://user:pass@example.com/v1?token=secret"),
+    "https://example.com/v1",
+  )
+  assert.strictEqual(
+    sanitizeUrl("https://example.com/v1/models"),
+    "https://example.com/v1/models",
+  )
+  assert.strictEqual(
+    sanitizeUrl("https://admin:hunter2@proxy.internal:8080/api"),
+    "https://proxy.internal:8080/api",
+  )
+  assert.strictEqual(sanitizeUrl("not-a-url"), "not-a-url")
 })

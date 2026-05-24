@@ -1,7 +1,7 @@
 import type { Plugin } from "@opencode-ai/plugin"
 import { tool } from "@opencode-ai/plugin"
 import { discoverAndEnrich, clearModelsDevCache, type DisplayStyle } from "./discovery.js"
-import { isValidUrl, sanitizeErrorMessage } from "./security.js"
+import { isValidUrl, sanitizeErrorMessage, sanitizeUrl } from "./security.js"
 
 export const id = "opencode-dynamic-custom-providers"
 
@@ -62,7 +62,7 @@ export const server: Plugin = async ({ client }) => {
           await client.app.log({
             body: {
               level: "info",
-              message: `Discovering models from ${providerId} at ${baseURL}`,
+              message: `Discovering models from ${providerId} at ${sanitizeUrl(baseURL)}`,
               service: id,
             },
           })
