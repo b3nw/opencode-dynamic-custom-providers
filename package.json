@@ -41,7 +41,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/b3nw/opencode-dynamic-custom-providers.git"
+    "url": "git+ssh://git@github.com/b3nw/opencode-dynamic-custom-providers.git"
   },
   "dependencies": {
     "@opencode-ai/plugin": "^1.14.0"

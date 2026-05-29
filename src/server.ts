@@ -1,44 +1,14 @@
 import type { Plugin } from "@opencode-ai/plugin"
 import { tool } from "@opencode-ai/plugin"
-import { discoverAndEnrich, type DisplayStyle } from "./discovery.js"
-import { isValidUrl, sanitizeErrorMessage, sanitizeUrl } from "./security.js"
-import { reloadAllProviders, addProvider, validateAddProviderParams } from "./commands.js"
+import { discoverAndEnrich } from "./discovery.js"
+import { sanitizeErrorMessage, sanitizeUrl } from "./security.js"
+import { reloadAllProviders, addProvider, validateAddProviderParams, persistProviderApiKey } from "./commands.js"
+import { shouldDiscover, getApiKey, type ProviderConfig, type OpenCodeConfig } from "./types.js"
 
 export const id = "opencode-dynamic-custom-providers"
 
-export interface ProviderConfig {
-  name?: string
-  npm?: string
-  api?: string
-  dynamic?: boolean
-  displayStyle?: DisplayStyle
-  options?: {
-    baseURL?: string
-    apiKey?: string
-    [key: string]: unknown
-  }
-  models?: Record<string, unknown>
-  [key: string]: unknown
-}
-
-interface OpenCodeConfig {
-  provider?: Record<string, ProviderConfig>
-  [key: string]: unknown
-}
-
-function shouldDiscover(provider: ProviderConfig): boolean {
-  const baseURL = provider.options?.baseURL
-  if (!baseURL || !isValidUrl(baseURL)) return false
-  if (provider.dynamic === true) return true
-  const models = provider.models
-  return !models || Object.keys(models).length === 0
-}
-
-export function getApiKey(provider: ProviderConfig, providerId: string): string | undefined {
-  if (provider.options?.apiKey) return provider.options.apiKey
-  const envKey = `OPENCODE_LOCAL_${providerId.toUpperCase().replaceAll(/[^A-Z0-9]/g, "_")}_API_KEY`
-  return process.env[envKey]
-}
+export type { ProviderConfig, OpenCodeConfig } from "./types.js"
+export { getApiKey } from "./types.js"
 
 export const server: Plugin = async ({ client }) => {
   await client.app.log({
@@ -181,21 +151,15 @@ export const server: Plugin = async ({ client }) => {
           const result = await addProvider(args)
           if (!result.success || !result.providerEntry) return result.message
 
-          if (args.apiKey) {
-            let storedInAuthStore = false
-            try {
-              await client.auth.set({
-                path: { id: args.providerId },
-                body: { type: "api", key: args.apiKey },
-              })
-              storedInAuthStore = true
-            } catch {
-              // Auth store unavailable — fall back to config
-            }
-            if (!storedInAuthStore) {
-              result.providerEntry.options!.apiKey = args.apiKey
-            }
-          }
+          await persistProviderApiKey(
+            result.providerEntry,
+            args.providerId,
+            args.apiKey,
+            async (id, key) => {
+              await client.auth.set({ path: { id }, body: { type: "api", key } })
+              return true
+            },
+          )
 
           providers[args.providerId] = result.providerEntry
           await client.config.update({

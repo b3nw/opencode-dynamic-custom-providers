@@ -1,7 +1,13 @@
 import type { TuiPlugin, TuiPluginApi } from "@opencode-ai/plugin/tui"
 import type { DisplayStyle } from "./discovery.js"
-import type { ProviderConfig } from "./server.js"
-import { reloadAllProviders, addProvider, validateAddProviderParams } from "./commands.js"
+import type { ProviderConfig } from "./types.js"
+import {
+  reloadAllProviders,
+  addProvider,
+  validateAddProviderParams,
+  validateProviderId,
+  persistProviderApiKey,
+} from "./commands.js"
 
 export const id = "opencode-dynamic-custom-providers"
 
@@ -117,6 +123,11 @@ export const tui: TuiPlugin = async (api: TuiPluginApi) => {
         if (!rawProviderId) return
 
         const providerId = rawProviderId.trim()
+        const idError = validateProviderId(providerId)
+        if (idError) {
+          api.ui.toast({ message: idError, variant: "error" })
+          return
+        }
 
         const { data: config } = await api.client.config.get()
         const providers = (config?.provider as Record<string, ProviderConfig>) ?? {}
@@ -134,7 +145,7 @@ export const tui: TuiPlugin = async (api: TuiPluginApi) => {
         const rawBaseURL = await showPrompt(api, "Base URL", "https://api.example.com/v1")
         if (!rawBaseURL) return
 
-        const baseURL = rawBaseURL.trim().replace(/\/+$/, "")
+        const baseURL = rawBaseURL.trim()
 
         const rawApiKey = await showPrompt(api, "API Key (Optional)", "sk-...")
         const apiKey = rawApiKey?.trim() || undefined
@@ -169,21 +180,15 @@ export const tui: TuiPlugin = async (api: TuiPluginApi) => {
           return
         }
 
-        if (apiKey) {
-          let storedInAuthStore = false
-          try {
-            await api.client.auth.set({
-              providerID: providerId,
-              auth: { type: "api", key: apiKey },
-            })
-            storedInAuthStore = true
-          } catch {
-            // Auth store unavailable — fall back to config file
-          }
-          if (!storedInAuthStore) {
-            result.providerEntry.options!.apiKey = apiKey
-          }
-        }
+        await persistProviderApiKey(
+          result.providerEntry,
+          providerId,
+          apiKey,
+          async (id, key) => {
+            await api.client.auth.set({ providerID: id, auth: { type: "api", key } })
+            return true
+          },
+        )
 
         providers[providerId] = result.providerEntry
         await api.client.config.update({ config: { provider: providers } as never })

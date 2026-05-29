@@ -2,7 +2,7 @@ import * as fs from "node:fs"
 import * as path from "node:path"
 import * as os from "node:os"
 import { createRequire } from "node:module"
-import { isValidUrl, sanitizeModelId } from "./security.js"
+import { isValidUrl, sanitizeModelId, sanitizeErrorMessage } from "./security.js"
 
 const require = createRequire(import.meta.url)
 const { version: PKG_VERSION } = require("../package.json")
@@ -61,6 +61,7 @@ interface ModelsDevProvider {
 // (e.g. via the reload-models TUI command) so the next discoverAndEnrich call
 // rebuilds it with fresh data.
 let lookupMap: Map<string, ModelsDevModel> | null = null
+let lookupPromise: Promise<Map<string, ModelsDevModel>> | null = null
 
 export function normalizeModelId(id: string): string {
   let normalized = id.toLowerCase()
@@ -146,13 +147,18 @@ function buildLookupMap(catalog: Record<string, ModelsDevProvider>): Map<string,
 
 async function getLookupMap(): Promise<Map<string, ModelsDevModel>> {
   if (lookupMap) return lookupMap
-  const catalog = await fetchModelsDevCatalog()
-  lookupMap = buildLookupMap(catalog)
-  return lookupMap
+  if (!lookupPromise) {
+    lookupPromise = fetchModelsDevCatalog().then(catalog => {
+      lookupMap = buildLookupMap(catalog)
+      return lookupMap
+    })
+  }
+  return lookupPromise
 }
 
 export function clearModelsDevCache(): void {
   lookupMap = null
+  lookupPromise = null
   try {
     if (fs.existsSync(CACHE_FILE)) fs.unlinkSync(CACHE_FILE)
   } catch {
@@ -192,9 +198,10 @@ export async function fetchEndpointModels(
   if (!isValidUrl(baseURL)) return []
 
   const url = new URL(baseURL)
-  const modelsPath = url.pathname.endsWith("/models")
-    ? url.pathname
-    : `${url.pathname.replace(/\/+$/, "")}/models`
+  const cleanPath = url.pathname.replace(/\/+$/, "")
+  const modelsPath = cleanPath.endsWith("/models")
+    ? cleanPath
+    : `${cleanPath}/models`
   const modelsUrl = new URL(modelsPath, url.origin)
   modelsUrl.search = url.search
 
@@ -209,7 +216,12 @@ export async function fetchEndpointModels(
   })
 
   if (!res.ok) {
-    throw new Error(`HTTP ${res.status}: ${res.statusText}`)
+    let detail = res.statusText
+    try {
+      const body = await res.text()
+      if (body) detail = sanitizeErrorMessage(body.slice(0, 500))
+    } catch { /* ignore read errors */ }
+    throw new Error(`HTTP ${res.status}: ${detail}`)
   }
 
   const rawData = await res.json()
