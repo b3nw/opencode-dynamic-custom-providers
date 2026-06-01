@@ -8,6 +8,7 @@ import {
   validateProviderId,
   persistProviderApiKey,
 } from "./commands.js"
+import { persistProvidersToLocalConfig } from "./persist.js"
 
 export const id = "opencode-dynamic-custom-providers"
 
@@ -95,7 +96,7 @@ export const tui: TuiPlugin = async (api: TuiPluginApi) => {
         }
 
         if (result.totalModels > 0) {
-          await api.client.config.update({ config: { provider: providers } as never })
+          await persistProvidersToLocalConfig(api.client, providers, result.updatedProviderIds)
         }
 
         if (result.failures === 0) {
@@ -191,7 +192,7 @@ export const tui: TuiPlugin = async (api: TuiPluginApi) => {
         )
 
         providers[providerId] = result.providerEntry
-        await api.client.config.update({ config: { provider: providers } as never })
+        await persistProvidersToLocalConfig(api.client, providers, [providerId])
 
         api.ui.toast({ message: result.message, variant: "success" })
       },

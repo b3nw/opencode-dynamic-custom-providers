@@ -123,6 +123,12 @@ A provider is eligible for discovery when it has `options.baseURL` and either:
 
 Providers that already have models defined in config are left unchanged unless `dynamic: true` is set.
 
+## Troubleshooting
+
+### Built-in Providers Appear Alongside a Proxy
+
+Some OpenAI-compatible proxies return model IDs that overlap with OpenCode's built-in provider namespaces. If OpenCode auto-displays built-in providers you do not intend to use, suppress them with the `disabled_providers` config key. After changing config, restart OpenCode so the provider list is rebuilt.
+
 ## Limitations
 - **Startup latency**: Each dynamic provider adds a network request at startup (15s timeout per endpoint, plus models.dev fetch on first run)
 - **models.dev coverage**: Models not in the models.dev catalog get sensible defaults (128k context window, 4096 output limit, text-only modalities)

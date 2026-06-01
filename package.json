@@ -24,7 +24,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "test": "npm run build && node tests/security.test.mjs && node tests/discovery.test.mjs",
+    "test": "npm run build && node tests/security.test.mjs && node tests/discovery.test.mjs && node tests/commands.test.mjs && node tests/server.test.mjs && node tests/persist.test.mjs",
     "prepare": "npm run build",
     "prepublishOnly": "npm test"
   },
