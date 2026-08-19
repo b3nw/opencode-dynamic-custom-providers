@@ -3,7 +3,7 @@ import { tool } from "@opencode-ai/plugin"
 import { discoverAndEnrich } from "./discovery.js"
 import { sanitizeErrorMessage, sanitizeUrl } from "./security.js"
 import { reloadAllProviders, addProvider, validateAddProviderParams, persistProviderApiKey } from "./commands.js"
-import { shouldDiscover, getApiKey, type ProviderConfig, type OpenCodeConfig } from "./types.js"
+import { shouldDiscover, getApiKey, getHeaders, type ProviderConfig, type OpenCodeConfig } from "./types.js"
 
 export const id = "opencode-dynamic-custom-providers"
 
@@ -28,6 +28,7 @@ export const server: Plugin = async ({ client }) => {
 
         const baseURL = providerConfig.options!.baseURL!
         const apiKey = getApiKey(providerConfig, providerId)
+        const extraHeaders = getHeaders(providerConfig)
 
         try {
           await client.app.log({
@@ -39,7 +40,7 @@ export const server: Plugin = async ({ client }) => {
           })
 
           const displayStyle = providerConfig.displayStyle ?? "slug"
-          const models = await discoverAndEnrich(baseURL, apiKey, displayStyle)
+          const models = await discoverAndEnrich(baseURL, apiKey, displayStyle, extraHeaders)
           const count = Object.keys(models).length
 
           if (count === 0) {

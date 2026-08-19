@@ -1,6 +1,6 @@
 import { discoverAndEnrich, clearModelsDevCache, type DisplayStyle } from "./discovery.js"
 import { isValidUrl, sanitizeErrorMessage } from "./security.js"
-import { getApiKey, shouldDiscover, type ProviderConfig } from "./types.js"
+import { getApiKey, getHeaders, shouldDiscover, type ProviderConfig } from "./types.js"
 
 export interface ReloadResult {
   totalModels: number
@@ -23,10 +23,11 @@ async function reloadOneProvider(
 ): Promise<ProviderReloadOutcome> {
   const baseURL = providerConfig.options!.baseURL!
   const apiKey = getApiKey(providerConfig, providerId)
+  const extraHeaders = getHeaders(providerConfig)
   const displayStyle: DisplayStyle = providerConfig.displayStyle ?? "slug"
 
   try {
-    const models = await discoverAndEnrich(baseURL, apiKey, displayStyle)
+    const models = await discoverAndEnrich(baseURL, apiKey, displayStyle, extraHeaders)
     const count = Object.keys(models).length
 
     if (count > 0) {

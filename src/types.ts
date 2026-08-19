@@ -11,6 +11,7 @@ export interface ProviderConfig {
   options?: {
     baseURL?: string
     apiKey?: string
+    headers?: Record<string, string>
     [key: string]: unknown
   }
   models?: Record<string, unknown>
@@ -26,6 +27,12 @@ export function getApiKey(provider: ProviderConfig, providerId: string): string 
   if (provider.options?.apiKey) return provider.options.apiKey
   const envKey = `OPENCODE_LOCAL_${providerId.toUpperCase().replaceAll(/[^A-Z0-9]/g, "_")}_API_KEY`
   return process.env[envKey]
+}
+
+export function getHeaders(provider: ProviderConfig): Record<string, string> | undefined {
+  const headers = provider.options?.headers
+  if (!headers || typeof headers !== "object") return undefined
+  return headers
 }
 
 export function shouldDiscover(provider: ProviderConfig): boolean {

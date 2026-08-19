@@ -194,6 +194,7 @@ interface EndpointModelResponse {
 export async function fetchEndpointModels(
   baseURL: string,
   apiKey?: string,
+  extraHeaders?: Record<string, string>,
 ): Promise<EndpointModelResponse[]> {
   if (!isValidUrl(baseURL)) return []
 
@@ -205,7 +206,10 @@ export async function fetchEndpointModels(
   const modelsUrl = new URL(modelsPath, url.origin)
   modelsUrl.search = url.search
 
-  const headers: Record<string, string> = { "Content-Type": "application/json" }
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...(extraHeaders ?? {}),
+  }
   if (apiKey) {
     headers["Authorization"] = `Bearer ${apiKey}`
   }
@@ -305,8 +309,9 @@ export async function discoverAndEnrich(
   baseURL: string,
   apiKey?: string,
   displayStyle: DisplayStyle = "slug",
+  extraHeaders?: Record<string, string>,
 ): Promise<Record<string, EnrichedModel>> {
-  const rawModels = await fetchEndpointModels(baseURL, apiKey)
+  const rawModels = await fetchEndpointModels(baseURL, apiKey, extraHeaders)
   const lookup = await getLookupMap()
   const result: Record<string, EnrichedModel> = {}
 
