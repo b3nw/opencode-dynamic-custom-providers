@@ -2,6 +2,14 @@
 
 This plugin extends OpenCode with dynamic model discovery for OpenAI-compatible providers, enriched with metadata from [models.dev](https://models.dev).
 
+> **OpenCode V2:** this package targets OpenCode V1. For OpenCode V2 (`2.0.21`) install
+> [`opencode-dynamic-custom-providers-v2`](https://github.com/b3nw/opencode-dynamic-custom-providers/blob/feat/opencode-v2-dual-track/packages/v2/README.md) instead:
+>
+> | OpenCode | Package | Config |
+> |---|---|---|
+> | V1 (`>=1.14`) | `opencode-dynamic-custom-providers` (this package) | `"plugin"`, `provider.<id>.options.baseURL` |
+> | V2 (`2.0.21`) | `opencode-dynamic-custom-providers-v2` | `"plugins"`, `providers.<id>.settings.baseURL` |
+
 ## Features
 
 ### 1. Automatic Model Discovery at Startup
@@ -28,20 +36,63 @@ A server-side tool the AI agent can call to re-discover models from all dynamic 
 
 ## Installation
 
+Install exactly one track, matching your OpenCode version. The V1 and V2 plugins have different
+package names and config keys (`"plugin"` vs `"plugins"`).
+
+### OpenCode V1 (`>=1.14`): `opencode-dynamic-custom-providers`
+
 ```bash
 opencode plugin opencode-dynamic-custom-providers
 ```
 
-### Alternative: Install from GitHub
+#### Alternative: Install from GitHub
 ```bash
 opencode plugin git+ssh://git@github.com/b3nw/opencode-dynamic-custom-providers.git
 ```
 
-### Alternative: Local Clone (for Development)
+#### Alternative: Local Clone (for Development)
 ```bash
 git clone https://github.com/b3nw/opencode-dynamic-custom-providers
 opencode plugin ./opencode-dynamic-custom-providers
 ```
+
+The GitHub and local-clone commands above install the V1 plugin only. Do not use them for OpenCode V2.
+
+### OpenCode V2 (`2.0.21`): `opencode-dynamic-custom-providers-v2`
+
+**After the npm release of `0.1.0`** (not yet published):
+
+```bash
+opencode plugin add opencode-dynamic-custom-providers-v2@0.1.0
+```
+
+or add it to the `plugins` array of `opencode.json(c)`:
+
+```jsonc
+{
+  "plugins": ["opencode-dynamic-custom-providers-v2@0.1.0"]
+}
+```
+
+**Until then, from a local build** of the `feat/opencode-v2-dual-track` branch:
+
+```bash
+git clone --branch feat/opencode-v2-dual-track https://github.com/b3nw/opencode-dynamic-custom-providers
+cd opencode-dynamic-custom-providers/packages/v2
+npm ci --ignore-scripts
+npm run build
+```
+
+Then point `plugins` at the built `dist/v2` directory using its absolute path (a directory, not a
+file; OpenCode V2 loads `server.js`, `tui.js` and `rpc.js` from it):
+
+```jsonc
+{
+  "plugins": ["file:///absolute/path/to/opencode-dynamic-custom-providers/packages/v2/dist/v2"]
+}
+```
+
+See the [V2 README](https://github.com/b3nw/opencode-dynamic-custom-providers/blob/feat/opencode-v2-dual-track/packages/v2/README.md) for V2 configuration (`providers.<id>.settings.baseURL`).
 
 ## Configuration
 

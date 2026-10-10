@@ -202,8 +202,17 @@ export async function fetchEndpointModels(
   const modelsPath = cleanPath.endsWith("/models")
     ? cleanPath
     : `${cleanPath}/models`
-  const modelsUrl = new URL(modelsPath, url.origin)
+  // Set the path on a copy of the parsed URL; re-parsing it as a relative reference
+  // would turn a base path such as `//other.host/v1` into a new authority.
+  const modelsUrl = new URL(url.href)
+  modelsUrl.username = ""
+  modelsUrl.password = ""
+  modelsUrl.hash = ""
+  modelsUrl.pathname = modelsPath
   modelsUrl.search = url.search
+  if (modelsUrl.origin !== url.origin) {
+    throw new Error("models URL does not match the base URL origin")
+  }
 
   const headers: Record<string, string> = { "Content-Type": "application/json" }
   if (apiKey) {
