@@ -190,6 +190,8 @@ Some OpenAI-compatible proxies return model IDs that overlap with OpenCode's bui
 ```bash
 git clone https://github.com/b3nw/opencode-dynamic-custom-providers
 cd opencode-dynamic-custom-providers
-npm install
+npm ci
 npm run build
 ```
+
+CI and the tag-driven npm release process for both packages are described in [RELEASING.md](https://github.com/b3nw/opencode-dynamic-custom-providers/blob/main/RELEASING.md).

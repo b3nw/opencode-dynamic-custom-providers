@@ -294,3 +294,6 @@ npm ci
 npm test         # tsc build + node --test ../../tests/v2/*.test.mjs
 npm pack         # prepack builds dist/
 ```
+
+Releases are tag-driven (`v2-plugin-v<version>`); see
+[RELEASING.md](https://github.com/b3nw/opencode-dynamic-custom-providers/blob/main/RELEASING.md).
