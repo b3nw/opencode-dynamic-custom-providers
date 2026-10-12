@@ -1,6 +1,6 @@
 {
   "name": "opencode-dynamic-custom-providers-v2",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Dynamic model discovery for OpenAI-compatible providers in OpenCode V2 (@opencode/plugin 2.0.21) with models.dev enrichment",
   "type": "module",
   "main": "./dist/v2/server.js",

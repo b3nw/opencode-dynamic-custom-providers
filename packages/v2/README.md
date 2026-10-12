@@ -4,7 +4,7 @@ Dynamic model discovery for OpenAI-compatible providers in **OpenCode V2**, enri
 [models.dev](https://models.dev) metadata. This is the V2 companion of
 [`opencode-dynamic-custom-providers`](https://github.com/b3nw/opencode-dynamic-custom-providers#readme), which keeps serving OpenCode V1.
 
-> Status: `0.1.x`, built and tested against the released `@opencode/plugin@2.0.21` /
+> Status: `1.0.x`, built and tested against the released `@opencode/plugin@2.0.21` /
 > `@opencode/cli@2.0.21`. The V2 plugin API is still evolving; pin this package.
 
 ## Which package do I need?
@@ -12,7 +12,7 @@ Dynamic model discovery for OpenAI-compatible providers in **OpenCode V2**, enri
 | OpenCode | Package | Plugin config key | Provider config | Install |
 |---|---|---|---|---|
 | V1 (`>=1.14`) | `opencode-dynamic-custom-providers` `2.x` | `"plugin": [...]` | `provider.<id>.options.baseURL` | `opencode plugin opencode-dynamic-custom-providers` |
-| V2 (`2.0.21`) | `opencode-dynamic-custom-providers-v2` `0.1.x` | `"plugins": [...]` | `providers.<id>.settings.baseURL` | add to `plugins` (below) or `opencode plugin add opencode-dynamic-custom-providers-v2` |
+| V2 (`2.0.21`) | `opencode-dynamic-custom-providers-v2` `1.0.x` | `"plugins": [...]` | `providers.<id>.settings.baseURL` | add to `plugins` (below) or `opencode plugin add opencode-dynamic-custom-providers-v2` |
 
 The two packages are independent; install exactly one per OpenCode installation. Do not
 configure `opencode-dynamic-custom-providers` (or a subpath of it) in OpenCode V2: its default
@@ -27,9 +27,9 @@ Project or global `opencode.json(c)`:
 ```jsonc
 {
   "plugins": [
-    "opencode-dynamic-custom-providers-v2@0.1.0"
+    "opencode-dynamic-custom-providers-v2@1.0.0"
     // or with options:
-    // { "package": "opencode-dynamic-custom-providers-v2@0.1.0", "options": { "displayStyle": "name" } }
+    // { "package": "opencode-dynamic-custom-providers-v2@1.0.0", "options": { "displayStyle": "name" } }
   ]
 }
 ```
@@ -77,7 +77,7 @@ absent from OpenCode's model lists.
 ```jsonc
 {
   "plugins": [{
-    "package": "opencode-dynamic-custom-providers-v2@0.1.0",
+    "package": "opencode-dynamic-custom-providers-v2@1.0.0",
     "options": {
       "displayStyle": "slug",                 // "slug" (model ID, default) or "name" (friendly name)
       "providers": {
@@ -257,7 +257,7 @@ the models discovered by the update are applied at that moment.
 
 | V1 (`opencode-dynamic-custom-providers`) | V2 (`opencode-dynamic-custom-providers-v2`) |
 |---|---|
-| `"plugin": ["opencode-dynamic-custom-providers"]` | `"plugins": ["opencode-dynamic-custom-providers-v2@0.1.0"]` |
+| `"plugin": ["opencode-dynamic-custom-providers"]` | `"plugins": ["opencode-dynamic-custom-providers-v2@1.0.0"]` |
 | `provider.<id>` | `providers.<id>` |
 | `npm: "@ai-sdk/openai-compatible"` | `package: "@opencode/ai/providers/openai-compatible"` (or omit) |
 | `options.baseURL` | `settings.baseURL` |

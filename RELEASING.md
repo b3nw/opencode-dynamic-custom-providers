@@ -6,7 +6,7 @@ This repository publishes two independent, unscoped, public npm packages to
 | Track | Directory | Package | Targets | Source | Release tag |
 |---|---|---|---|---|---|
 | V1 | `/` | `opencode-dynamic-custom-providers` (`2.x`) | OpenCode V1 | `src/*.ts` (excludes `src/v2`) | `v1-plugin-v<version>` |
-| V2 | `packages/v2` | `opencode-dynamic-custom-providers-v2` (`0.x`) | OpenCode V2 (`@opencode/plugin` 2.0.21) | `src/v2/*.ts` only | `v2-plugin-v<version>` |
+| V2 | `packages/v2` | `opencode-dynamic-custom-providers-v2` (`1.x`) | OpenCode V2 (`@opencode/plugin` 2.0.21) | `src/v2/*.ts` only | `v2-plugin-v<version>` |
 
 Each package has its own version line, changelog, lockfile and `latest` dist-tag. Never move
 `latest` of `opencode-dynamic-custom-providers` to a V2-only build: unpinned V1 users would break.
@@ -168,21 +168,21 @@ workflow verified rather than a local rebuild:
 
 1. Configure the `npm-release-v2` environment with required reviewers first (so the publish job
    waits instead of failing).
-2. Merge the release commit to `main`, then tag and push it: `git tag -a v2-plugin-v0.1.0 -m
-   "opencode-dynamic-custom-providers-v2 0.1.0" <merge-commit> && git push origin v2-plugin-v0.1.0`.
+2. Merge the release commit to `main`, then tag and push it: `git tag -a v2-plugin-v1.0.0 -m
+   "opencode-dynamic-custom-providers-v2 1.0.0" <merge-commit> && git push origin v2-plugin-v1.0.0`.
 3. When `verify` is green and `publish-v2` waits for approval, download the verified tarball and
    check it against the SHA-256 printed by the `Pack once` step:
 
    ```bash
    gh run download <run-id> -n npm-release-tarball -D /tmp/v2-bootstrap
-   sha256sum /tmp/v2-bootstrap/opencode-dynamic-custom-providers-v2-0.1.0.tgz
-   node scripts/ci/release.mjs verify-tarball --track v2 --tarball /tmp/v2-bootstrap/opencode-dynamic-custom-providers-v2-0.1.0.tgz
+   sha256sum /tmp/v2-bootstrap/opencode-dynamic-custom-providers-v2-1.0.0.tgz
+   node scripts/ci/release.mjs verify-tarball --track v2 --tarball /tmp/v2-bootstrap/opencode-dynamic-custom-providers-v2-1.0.0.tgz
    ```
 
 4. Publish it from the owner's logged-in npm account (interactive 2FA):
 
    ```bash
-   npm publish /tmp/v2-bootstrap/opencode-dynamic-custom-providers-v2-0.1.0.tgz --access public \
+   npm publish /tmp/v2-bootstrap/opencode-dynamic-custom-providers-v2-1.0.0.tgz --access public \
      --tag latest --registry https://registry.npmjs.org/ --ignore-scripts
    ```
 
@@ -211,20 +211,20 @@ git push origin v1-plugin-v2.3.0
 V2 (`packages/v2`):
 
 ```bash
-(cd packages/v2 && npm version 0.2.0 --no-git-tag-version)   # updates packages/v2 package.json + lock
+(cd packages/v2 && npm version 1.1.0 --no-git-tag-version)   # updates packages/v2 package.json + lock
 # edit packages/v2/CHANGELOG.md
-git commit -am "chore(release): opencode-dynamic-custom-providers-v2 0.2.0"
+git commit -am "chore(release): opencode-dynamic-custom-providers-v2 1.1.0"
 # PR, CI, merge, then:
-git tag -a v2-plugin-v0.2.0 -m "opencode-dynamic-custom-providers-v2 0.2.0" <merge-commit>
-git push origin v2-plugin-v0.2.0
+git tag -a v2-plugin-v1.1.0 -m "opencode-dynamic-custom-providers-v2 1.1.0" <merge-commit>
+git push origin v2-plugin-v1.1.0
 ```
 
 Prereleases use a SemVer prerelease version and publish to `next`, never `latest`:
-`npm version 0.3.0-beta.1 --no-git-tag-version` → tag `v2-plugin-v0.3.0-beta.1`. Install with
+`npm version 1.2.0-beta.1 --no-git-tag-version` → tag `v2-plugin-v1.2.0-beta.1`. Install with
 `npm install opencode-dynamic-custom-providers-v2@next`.
 
 Before tagging, the manual CI run (`Actions → CI → Run workflow`, `release_tag` =
-`v2-plugin-v0.2.0`) checks the planned tag without publishing. Approve the `npm-release-v*`
+`v2-plugin-v1.1.0`) checks the planned tag without publishing. Approve the `npm-release-v*`
 deployment when the `verify` job is green.
 
 ## Failure and retry

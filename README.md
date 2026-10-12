@@ -3,7 +3,7 @@
 This plugin extends OpenCode with dynamic model discovery for OpenAI-compatible providers, enriched with metadata from [models.dev](https://models.dev).
 
 > **OpenCode V2:** this package targets OpenCode V1. For OpenCode V2 (`2.0.21`) install
-> [`opencode-dynamic-custom-providers-v2`](https://github.com/b3nw/opencode-dynamic-custom-providers/blob/feat/opencode-v2-dual-track/packages/v2/README.md) instead:
+> [`opencode-dynamic-custom-providers-v2`](https://github.com/b3nw/opencode-dynamic-custom-providers/blob/main/packages/v2/README.md) instead:
 >
 > | OpenCode | Package | Config |
 > |---|---|---|
@@ -60,24 +60,24 @@ The GitHub and local-clone commands above install the V1 plugin only. Do not use
 
 ### OpenCode V2 (`2.0.21`): `opencode-dynamic-custom-providers-v2`
 
-**After the npm release of `0.1.0`** (not yet published):
+Install the V2 plugin:
 
 ```bash
-opencode plugin add opencode-dynamic-custom-providers-v2@0.1.0
+opencode plugin add opencode-dynamic-custom-providers-v2@1.0.0
 ```
 
 or add it to the `plugins` array of `opencode.json(c)`:
 
 ```jsonc
 {
-  "plugins": ["opencode-dynamic-custom-providers-v2@0.1.0"]
+  "plugins": ["opencode-dynamic-custom-providers-v2@1.0.0"]
 }
 ```
 
-**Until then, from a local build** of the `feat/opencode-v2-dual-track` branch:
+#### Alternative: Local Clone (for Development)
 
 ```bash
-git clone --branch feat/opencode-v2-dual-track https://github.com/b3nw/opencode-dynamic-custom-providers
+git clone https://github.com/b3nw/opencode-dynamic-custom-providers
 cd opencode-dynamic-custom-providers/packages/v2
 npm ci --ignore-scripts
 npm run build
@@ -92,7 +92,7 @@ file; OpenCode V2 loads `server.js`, `tui.js` and `rpc.js` from it):
 }
 ```
 
-See the [V2 README](https://github.com/b3nw/opencode-dynamic-custom-providers/blob/feat/opencode-v2-dual-track/packages/v2/README.md) for V2 configuration (`providers.<id>.settings.baseURL`).
+See the [V2 README](https://github.com/b3nw/opencode-dynamic-custom-providers/blob/main/packages/v2/README.md) for V2 configuration (`providers.<id>.settings.baseURL`).
 
 ## Configuration
 
