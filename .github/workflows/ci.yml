@@ -1,0 +1,158 @@
+# Independent CI for the two npm packages in this repository:
+#   V1: opencode-dynamic-custom-providers     (repo root,    src/*.ts, tests/*.test.mjs)
+#   V2: opencode-dynamic-custom-providers-v2  (packages/v2,  src/v2/*.ts, tests/v2/*.test.mjs)
+# V2 compiles sources and runs tests that live outside packages/v2, so every job checks out the
+# whole repository. Each job installs only its own lockfile and packs only its own package.
+# Releases are handled by publish.yml; nothing here has registry credentials or OIDC.
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Optional dry run: validate a planned release tag (v1-plugin-vX.Y.Z / v2-plugin-vX.Y.Z) against the manifests. Never publishes."
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "24.21.0" # Node 24 LTS; bundles npm 11.19.0
+  NPM_VERSION: "11.19.0"
+
+jobs:
+  helpers:
+    name: Release helper tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          package-manager-cache: false
+      - name: Verify toolchain
+        run: |
+          test "$(node --version)" = "v${NODE_VERSION}"
+          test "$(npm --version)" = "${NPM_VERSION}"
+      - name: Test release helpers
+        run: node --test scripts/ci/release.test.mjs
+
+  v1:
+    name: V1 package (opencode-dynamic-custom-providers)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          package-manager-cache: false
+      - name: Verify toolchain
+        run: |
+          test "$(node --version)" = "v${NODE_VERSION}"
+          test "$(npm --version)" = "${NPM_VERSION}"
+      - name: Install (frozen root lockfile, no lifecycle scripts)
+        run: npm ci --ignore-scripts
+      - name: Build and test
+        run: npm test
+      - name: Check V1 build did not touch V2 output
+        run: test ! -e packages/v2/dist
+      - name: Pack once
+        id: pack
+        run: node scripts/ci/release.mjs pack --track v1 --out-dir "$RUNNER_TEMP/pack"
+      - name: Verify tarball boundary
+        env:
+          TARBALL: ${{ steps.pack.outputs.tarball }}
+        run: node scripts/ci/release.mjs verify-tarball --track v1 --tarball "$TARBALL"
+      - name: Verify production-only consumer install and imports
+        env:
+          TARBALL: ${{ steps.pack.outputs.tarball }}
+        run: node scripts/ci/release.mjs verify-consumer --track v1 --tarball "$TARBALL"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: npm-v1-tarball
+          path: ${{ steps.pack.outputs.tarball }}
+          if-no-files-found: error
+          retention-days: 14
+
+  v2:
+    name: V2 package (opencode-dynamic-custom-providers-v2)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: packages/v2
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          package-manager-cache: false
+      - name: Verify toolchain
+        run: |
+          test "$(node --version)" = "v${NODE_VERSION}"
+          test "$(npm --version)" = "${NPM_VERSION}"
+      - name: Install (frozen packages/v2 lockfile, no lifecycle scripts)
+        run: npm ci --ignore-scripts
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Build and test
+        run: npm test
+      - name: Check V2 build did not touch V1 output
+        run: test ! -e ../../dist
+      - name: Pack once
+        id: pack
+        run: node ../../scripts/ci/release.mjs pack --track v2 --out-dir "$RUNNER_TEMP/pack"
+      - name: Verify tarball boundary
+        env:
+          TARBALL: ${{ steps.pack.outputs.tarball }}
+        run: node ../../scripts/ci/release.mjs verify-tarball --track v2 --tarball "$TARBALL"
+      - name: Verify production-only consumer install and imports
+        env:
+          TARBALL: ${{ steps.pack.outputs.tarball }}
+        run: node ../../scripts/ci/release.mjs verify-consumer --track v2 --tarball "$TARBALL"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: npm-v2-tarball
+          path: ${{ steps.pack.outputs.tarball }}
+          if-no-files-found: error
+          retention-days: 14
+
+  release-dry-run:
+    name: Release tag dry run (no publish)
+    if: github.event_name == 'workflow_dispatch' && inputs.release_tag != ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          package-manager-cache: false
+      - name: Select release for the planned tag
+        id: select
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: node scripts/ci/release.mjs select --tag "$RELEASE_TAG"
+      - name: Check the dist-tag line (anonymous registry read)
+        env:
+          TRACK: ${{ steps.select.outputs.track }}
+          VERSION: ${{ steps.select.outputs.version }}
+        run: node scripts/ci/release.mjs check-latest --track "$TRACK" --version "$VERSION"

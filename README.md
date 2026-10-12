@@ -2,6 +2,14 @@
 
 This plugin extends OpenCode with dynamic model discovery for OpenAI-compatible providers, enriched with metadata from [models.dev](https://models.dev).
 
+> **OpenCode V2:** this package targets OpenCode V1. For OpenCode V2 (`2.0.21`) install
+> [`opencode-dynamic-custom-providers-v2`](https://github.com/b3nw/opencode-dynamic-custom-providers/blob/main/packages/v2/README.md) instead:
+>
+> | OpenCode | Package | Config |
+> |---|---|---|
+> | V1 (`>=1.14`) | `opencode-dynamic-custom-providers` (this package) | `"plugin"`, `provider.<id>.options.baseURL` |
+> | V2 (`2.0.21`) | `opencode-dynamic-custom-providers-v2` | `"plugins"`, `providers.<id>.settings.baseURL` |
+
 ## Features
 
 ### 1. Automatic Model Discovery at Startup
@@ -28,20 +36,63 @@ A server-side tool the AI agent can call to re-discover models from all dynamic 
 
 ## Installation
 
+Install exactly one track, matching your OpenCode version. The V1 and V2 plugins have different
+package names and config keys (`"plugin"` vs `"plugins"`).
+
+### OpenCode V1 (`>=1.14`): `opencode-dynamic-custom-providers`
+
 ```bash
 opencode plugin opencode-dynamic-custom-providers
 ```
 
-### Alternative: Install from GitHub
+#### Alternative: Install from GitHub
 ```bash
 opencode plugin git+ssh://git@github.com/b3nw/opencode-dynamic-custom-providers.git
 ```
 
-### Alternative: Local Clone (for Development)
+#### Alternative: Local Clone (for Development)
 ```bash
 git clone https://github.com/b3nw/opencode-dynamic-custom-providers
 opencode plugin ./opencode-dynamic-custom-providers
 ```
+
+The GitHub and local-clone commands above install the V1 plugin only. Do not use them for OpenCode V2.
+
+### OpenCode V2 (`2.0.21`): `opencode-dynamic-custom-providers-v2`
+
+Install the V2 plugin:
+
+```bash
+opencode plugin add opencode-dynamic-custom-providers-v2@1.0.0
+```
+
+or add it to the `plugins` array of `opencode.json(c)`:
+
+```jsonc
+{
+  "plugins": ["opencode-dynamic-custom-providers-v2@1.0.0"]
+}
+```
+
+#### Alternative: Local Clone (for Development)
+
+```bash
+git clone https://github.com/b3nw/opencode-dynamic-custom-providers
+cd opencode-dynamic-custom-providers/packages/v2
+npm ci --ignore-scripts
+npm run build
+```
+
+Then point `plugins` at the built `dist/v2` directory using its absolute path (a directory, not a
+file; OpenCode V2 loads `server.js`, `tui.js` and `rpc.js` from it):
+
+```jsonc
+{
+  "plugins": ["file:///absolute/path/to/opencode-dynamic-custom-providers/packages/v2/dist/v2"]
+}
+```
+
+See the [V2 README](https://github.com/b3nw/opencode-dynamic-custom-providers/blob/main/packages/v2/README.md) for V2 configuration (`providers.<id>.settings.baseURL`).
 
 ## Configuration
 
@@ -123,6 +174,12 @@ A provider is eligible for discovery when it has `options.baseURL` and either:
 
 Providers that already have models defined in config are left unchanged unless `dynamic: true` is set.
 
+## Troubleshooting
+
+### Built-in Providers Appear Alongside a Proxy
+
+Some OpenAI-compatible proxies return model IDs that overlap with OpenCode's built-in provider namespaces. If OpenCode auto-displays built-in providers you do not intend to use, suppress them with the `disabled_providers` config key. After changing config, restart OpenCode so the provider list is rebuilt.
+
 ## Limitations
 - **Startup latency**: Each dynamic provider adds a network request at startup (15s timeout per endpoint, plus models.dev fetch on first run)
 - **models.dev coverage**: Models not in the models.dev catalog get sensible defaults (128k context window, 4096 output limit, text-only modalities)
@@ -133,6 +190,8 @@ Providers that already have models defined in config are left unchanged unless `
 ```bash
 git clone https://github.com/b3nw/opencode-dynamic-custom-providers
 cd opencode-dynamic-custom-providers
-npm install
+npm ci
 npm run build
 ```
+
+CI and the tag-driven npm release process for both packages are described in [RELEASING.md](https://github.com/b3nw/opencode-dynamic-custom-providers/blob/main/RELEASING.md).

@@ -1,11 +1,12 @@
 import { discoverAndEnrich, clearModelsDevCache, type DisplayStyle } from "./discovery.js"
 import { isValidUrl, sanitizeErrorMessage } from "./security.js"
-import { getApiKey, shouldDiscover, type ProviderConfig } from "./types.js"
+import { getApiKey, type ProviderConfig } from "./types.js"
 
 export interface ReloadResult {
   totalModels: number
   failures: number
   providerCount: number
+  updatedProviderIds: string[]
   warnings: string[]
   errors: string[]
 }
@@ -55,13 +56,14 @@ export async function reloadAllProviders(
   providers: Record<string, ProviderConfig>,
 ): Promise<ReloadResult> {
   const dynamicProviders = Object.entries(providers).filter(
-    ([, p]) => shouldDiscover(p),
+    ([, p]) => Boolean(p.options?.baseURL && isValidUrl(p.options.baseURL)),
   )
 
   const result: ReloadResult = {
     totalModels: 0,
     failures: 0,
     providerCount: dynamicProviders.length,
+    updatedProviderIds: [],
     warnings: [],
     errors: [],
   }
@@ -93,6 +95,7 @@ export async function reloadAllProviders(
     if (models) {
       const providerConfig = providers[providerId]
       providerConfig.models = models
+      result.updatedProviderIds.push(providerId)
       result.totalModels += Object.keys(models).length
     }
   }

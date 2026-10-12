@@ -1,0 +1,79 @@
+{
+  "name": "opencode-dynamic-custom-providers-v2",
+  "version": "1.0.0",
+  "description": "Dynamic model discovery for OpenAI-compatible providers in OpenCode V2 (@opencode/plugin 2.0.21) with models.dev enrichment",
+  "type": "module",
+  "main": "./dist/v2/server.js",
+  "types": "./dist/v2/server.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/v2/server.d.ts",
+      "default": "./dist/v2/server.js"
+    },
+    "./server": {
+      "types": "./dist/v2/server.d.ts",
+      "default": "./dist/v2/server.js"
+    },
+    "./tui": {
+      "types": "./dist/v2/tui.d.ts",
+      "default": "./dist/v2/tui.js"
+    },
+    "./rpc": {
+      "types": "./dist/v2/rpc.d.ts",
+      "default": "./dist/v2/rpc.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "npm run build && cd ../.. && node --test \"tests/v2/*.test.mjs\"",
+    "prepack": "npm run build"
+  },
+  "keywords": [
+    "opencode",
+    "opencode-v2",
+    "plugin",
+    "ai",
+    "openai",
+    "dynamic",
+    "discovery",
+    "models.dev"
+  ],
+  "author": "b3nw",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/b3nw/opencode-dynamic-custom-providers.git",
+    "directory": "packages/v2"
+  },
+  "dependencies": {
+    "jsonc-parser": "3.3.1"
+  },
+  "peerDependencies": {
+    "@opencode/plugin": "2.0.21"
+  },
+  "peerDependenciesMeta": {
+    "@opencode/plugin": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@opencode/plugin": "2.0.21",
+    "@opencode/theme": "2.0.21",
+    "@opentui/core": "0.5.14",
+    "@opentui/solid": "0.5.14",
+    "@types/node": "24.12.2",
+    "solid-js": "1.9.12",
+    "typescript": "5.9.3"
+  },
+  "engines": {
+    "node": ">=20",
+    "opencode": ">=2.0.21 <3"
+  }
+}
